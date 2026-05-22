@@ -784,14 +784,46 @@ function buildCatalogUI() {
         const svgContent = SVG_ICONS[key] || '';
         const zoneColor = zoneColors[metrics.tier] || '#00f0ff';
         
+        // Calculer le gain de performance de manière lisible
+        let gain = '';
+        if (metrics.maxQps) {
+            gain = `+${metrics.maxQps} QPS`;
+        } else if (metrics.maxQueueSize) {
+            gain = `Buf: ${metrics.maxQueueSize}`;
+        } else if (key === 'cdn') {
+            gain = `-15ms Lat`;
+        } else if (key === 'cdn_varnish') {
+            gain = `-12ms Lat`;
+        } else if (metrics.latencyOverhead !== undefined && metrics.latencyOverhead !== 0) {
+            gain = `${metrics.latencyOverhead > 0 ? '+' : ''}${metrics.latencyOverhead}ms Lat`;
+        } else if (metrics.tags && metrics.tags.length > 0) {
+            gain = metrics.tags[0];
+        } else {
+            gain = metrics.functionSummary || 'Système';
+        }
+        
+        // Tronquer la description pour qu'elle s'ajuste parfaitement dans la vignette
+        const shortDesc = metrics.desc && metrics.desc.length > 60 
+            ? metrics.desc.substring(0, 57) + '...' 
+            : (metrics.desc || '');
+        
         html += `
             <div class="catalog-card compact" draggable="true" data-comp-type="${key}" data-category="${category}" data-zone="${metrics.tier}" style="--zone-color: ${zoneColor};">
-                <div class="compact-icon-container">
-                    ${svgContent}
+                <div class="compact-top-row">
+                    <div class="compact-icon-container">
+                        ${svgContent}
+                    </div>
+                    <div class="compact-details">
+                        <span class="compact-name" title="${metrics.name}">${metrics.name}</span>
+                        <div class="compact-stats-row">
+                            <span class="compact-price-upfront" title="Prix d'achat upfront">Achat : ${metrics.cost} $</span>
+                            <span class="compact-price-maint" title="Charges de maintenance par tick">Maint : ${metrics.maintenance} $/s</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="compact-details">
-                    <span class="compact-name">${metrics.name}</span>
-                    <span class="compact-price">${metrics.cost} $</span>
+                <div class="compact-short-desc">${shortDesc}</div>
+                <div class="compact-gain-row">
+                    <span class="compact-gain-badge" title="Performance ou bénéfice principal">${gain}</span>
                 </div>
             </div>
         `;
@@ -1620,58 +1652,12 @@ function resetGameState() {
     
     // Deep clone template contracts avec leurs propres infrastructures et métriques
     state.contracts = CONTRACTS_TEMPLATE.map(c => {
-        const isStartup = c.id === 'startup';
         const initialInfra = {
             lbAlgo: 'round-robin',
             cdnActive: false,
             cdnCost: 150,
             cdnMaintenance: 2,
-            components: isStartup ? [
-                {
-                    id: 'lb_regional_initial_' + c.id,
-                    type: 'lb_regional',
-                    name: 'Regional HTTP LB',
-                    tier: 'lb',
-                    maxQps: 150,
-                    activeMaxQps: 150,
-                    latencyOverhead: 10,
-                    load: 0,
-                    activeQps: 0,
-                    maintenance: 2,
-                    x: 0,
-                    y: 0
-                },
-                {
-                    id: 'db_master_' + c.id,
-                    type: 'db_master',
-                    name: 'Postgres SQL Master',
-                    tier: 'db',
-                    maxQps: 150,
-                    activeMaxQps: 150,
-                    latencyOverhead: 0,
-                    load: 0,
-                    activeQps: 0,
-                    maintenance: 8,
-                    x: 0,
-                    y: 0
-                },
-                {
-                    id: 'compute_initial_1_' + c.id,
-                    type: 'compute_run',
-                    name: 'Cloud Run Instance 1',
-                    tier: 'compute',
-                    maxQps: 150,
-                    activeMaxQps: 50,
-                    latencyOverhead: 5,
-                    load: 0,
-                    activeQps: 0,
-                    maintenance: 8,
-                    scalingTimer: 0,
-                    scaleDownTimer: 0,
-                    x: 0,
-                    y: 0
-                }
-            ] : []
+            components: []
         };
         
         return {
@@ -1913,19 +1899,43 @@ function updateUIElements() {
     // Budget
     document.getElementById('budget-value').innerText = `${formatNumber(state.budget)} $`;
     
-    // Tendance budgétaire temps réel
+    // Tendance budgétaire temps réel globale
     const budgetTrend = document.getElementById('budget-trend');
     if (budgetTrend) {
-        const netProfit = (state.lastFinancials && state.lastFinancials.netProfit) || 0;
-        if (netProfit > 0) {
-            budgetTrend.innerHTML = `▲ +${formatNumber(netProfit)} $/s`;
+        const globalNetProfit = (state.lastFinancials && state.lastFinancials.globalNetProfit) !== undefined 
+            ? state.lastFinancials.globalNetProfit 
+            : 0;
+        if (globalNetProfit > 0) {
+            budgetTrend.innerHTML = `▲ +${formatNumber(globalNetProfit)} $/s`;
             budgetTrend.className = 'budget-trend-indicator gain';
-        } else if (netProfit < 0) {
-            budgetTrend.innerHTML = `▼ ${formatNumber(netProfit)} $/s`;
+        } else if (globalNetProfit < 0) {
+            budgetTrend.innerHTML = `▼ ${formatNumber(globalNetProfit)} $/s`;
             budgetTrend.className = 'budget-trend-indicator loss';
         } else {
             budgetTrend.innerHTML = `▲ +0 $/s`;
             budgetTrend.className = 'budget-trend-indicator';
+        }
+    }
+    
+    // Tendance budgétaire spécifique au projet actif
+    const projectTrend = document.getElementById('budget-project-trend');
+    if (projectTrend) {
+        const activeContract = state.contracts.find(c => c.id === state.activeContractId);
+        if (activeContract && activeContract.signed) {
+            const projectNetProfit = (state.lastFinancials && state.lastFinancials.netProfit) || 0;
+            if (projectNetProfit > 0) {
+                projectTrend.innerHTML = `Projet actif : +${formatNumber(projectNetProfit)} $/s`;
+                projectTrend.style.color = 'var(--green)';
+            } else if (projectNetProfit < 0) {
+                projectTrend.innerHTML = `Projet actif : ${formatNumber(projectNetProfit)} $/s`;
+                projectTrend.style.color = 'var(--red)';
+            } else {
+                projectTrend.innerHTML = `Projet actif : +0 $/s`;
+                projectTrend.style.color = 'var(--color-muted)';
+            }
+        } else {
+            projectTrend.innerHTML = `Projet actif : Inactif`;
+            projectTrend.style.color = 'var(--color-muted)';
         }
     }
     
@@ -2705,16 +2715,14 @@ window.signContract = function(id) {
             contract.slaWindowIndex = 0;
             contract.trust = 50.0;
             
-            // Garantir que l'infrastructure commence vide à la signature (sauf pour startup)
-            if (contract.id !== 'startup') {
-                contract.infrastructure = {
-                    lbAlgo: 'round-robin',
-                    cdnActive: false,
-                    cdnCost: 150,
-                    cdnMaintenance: 2,
-                    components: []
-                };
-            }
+            // Garantir que l'infrastructure commence vide à la signature
+            contract.infrastructure = {
+                lbAlgo: 'round-robin',
+                cdnActive: false,
+                cdnCost: 150,
+                cdnMaintenance: 2,
+                components: []
+            };
             
             // Crédit des fonds de départ (Upfront Funding)
             state.budget += contract.upfrontFunding;
@@ -3532,6 +3540,12 @@ function simulationTick() {
     
     // Appliquer le flux financier net global de ce tick sur le budget de la compagnie
     state.budget = Math.max(0, state.budget + totalIncomeThisTick - totalMaintenanceThisTick);
+    
+    // Enregistrer la tendance nette globale
+    if (!state.lastFinancials) {
+        state.lastFinancials = {};
+    }
+    state.lastFinancials.globalNetProfit = totalIncomeThisTick - totalMaintenanceThisTick;
     
     // --- CONDITIONS DE DEFAITE & VICTOIRE ---
     if (state.trust <= 0) {
