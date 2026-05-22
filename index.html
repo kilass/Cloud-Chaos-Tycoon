@@ -194,11 +194,7 @@
                 <button id="tutorial-btn" class="tuto-action-btn">Compris</button>
             </div>
             
-            <!-- Overlay floating card for audit details (toujours visible) -->
-            <div class="overlay-info" style="display: block !important;">
-                <div class="overlay-title" id="overlay-node-title">Topologie Réseau Active</div>
-                <div class="overlay-text" id="overlay-node-desc">Surveillez les requêtes (particules de couleur) transitant entre l'Internet public et vos clusters applicatifs. Survoler un nœud ou un lien réseau pour afficher son audit détaillé.</div>
-            </div>
+
             
             <canvas id="network-map"></canvas>
             
@@ -321,18 +317,21 @@
                     <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding: 0.5rem 1rem;">
                         <span class="panel-title" style="font-size: 0.72rem; color: var(--magenta);">📟 OBJECTIFS, ALERTES & DIAGNOSTICS</span>
                     </div>
-                    <div class="info-container" style="flex: 1; overflow-y: auto; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div class="info-container" style="flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 0.75rem; gap: 0.5rem; overflow: hidden;">
                         
-                        <!-- Objectifs de mission -->
-                        <div class="objectives-panel" id="objectives-panel">
-                            <!-- Rempli dynamiquement en JS -->
+                        <!-- Zone de défilement pour les Objectifs et Notifications -->
+                        <div style="flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; padding-right: 2px;">
+                            <!-- Objectifs de mission -->
+                            <div class="objectives-panel" id="objectives-panel" style="margin-bottom: 0;">
+                                <!-- Rempli dynamiquement en JS -->
+                            </div>
+
+                            <!-- Notifications d'incidents / événements temporaires -->
+                            <div id="game-notifications-container" class="game-notifications-container"></div>
                         </div>
 
-                        <!-- Notifications d'incidents / événements temporaires -->
-                        <div id="game-notifications-container" class="game-notifications-container"></div>
-
                         <!-- Fixed Cyberpunk Inspector Panel -->
-                        <div class="catalog-inspector-panel" id="catalog-inspector">
+                        <div class="catalog-inspector-panel" id="catalog-inspector" style="flex-shrink: 0; margin-top: 0;">
                             <div class="inspector-logo-container" id="inspector-logo-container"></div>
                             <div class="inspector-header">
                                 <span class="inspector-title" id="inspector-title">Console d'inspection</span>
