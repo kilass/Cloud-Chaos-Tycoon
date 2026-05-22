@@ -18,9 +18,26 @@ const CONTRACTS_TEMPLATE = [
         minTrustToSign: 0,
         minSlaToSign: 0,
         reqDetails: [
-            { text: 'Aucun prérequis spécifique', check: () => true }
+            { text: 'Au moins 1 Load Balancer (Réseau)', check: (infra) => {
+                const targetInfra = infra || state.infrastructure;
+                return targetInfra.components.some(c => c.tier === 'lb');
+            }},
+            { text: 'Au moins 1 Compute (Calcul)', check: (infra) => {
+                const targetInfra = infra || state.infrastructure;
+                return targetInfra.components.some(c => c.tier === 'compute');
+            }},
+            { text: 'Au moins 1 Database (Données)', check: (infra) => {
+                const targetInfra = infra || state.infrastructure;
+                return targetInfra.components.some(c => c.tier === 'db');
+            }}
         ],
-        reqCheck: () => true
+        reqCheck: (infra) => {
+            const targetInfra = infra || state.infrastructure;
+            const hasLb = targetInfra.components.some(c => c.tier === 'lb');
+            const hasCompute = targetInfra.components.some(c => c.tier === 'compute');
+            const hasDb = targetInfra.components.some(c => c.tier === 'db');
+            return hasLb && hasCompute && hasDb;
+        }
     },
     {
         id: 'ecommerce',
@@ -33,6 +50,10 @@ const CONTRACTS_TEMPLATE = [
         minTrustToSign: 60,
         minSlaToSign: 85.00,
         reqDetails: [
+            { text: 'Au moins 1 Load Balancer (Réseau)', check: (infra) => {
+                const targetInfra = infra || state.infrastructure;
+                return targetInfra.components.some(c => c.tier === 'lb');
+            }},
             { text: 'Au moins 2 Compute (Calcul)', check: (infra) => {
                 const targetInfra = infra || state.infrastructure;
                 return targetInfra.components.filter(c => c.tier === 'compute').length >= 2;
@@ -44,9 +65,10 @@ const CONTRACTS_TEMPLATE = [
         ],
         reqCheck: (infra) => {
             const targetInfra = infra || state.infrastructure;
+            const hasLb = targetInfra.components.some(c => c.tier === 'lb');
             const comps = targetInfra.components.filter(c => c.tier === 'compute').length;
             const redis = targetInfra.components.some(c => c.type === 'db_redis');
-            return comps >= 2 && redis;
+            return hasLb && comps >= 2 && redis;
         }
     },
     {
@@ -64,6 +86,14 @@ const CONTRACTS_TEMPLATE = [
                 const targetInfra = infra || state.infrastructure;
                 return targetInfra.components.some(c => c.type === 'lb_global');
             }},
+            { text: 'Au moins 1 Compute (Calcul)', check: (infra) => {
+                const targetInfra = infra || state.infrastructure;
+                return targetInfra.components.some(c => c.tier === 'compute');
+            }},
+            { text: 'Au moins 1 Database (Données)', check: (infra) => {
+                const targetInfra = infra || state.infrastructure;
+                return targetInfra.components.some(c => c.tier === 'db');
+            }},
             { text: 'Profilage OpenTelemetry Trace', check: (infra) => {
                 const targetInfra = infra || state.infrastructure;
                 return targetInfra.components.some(c => c.type === 'monitoring_trace');
@@ -76,9 +106,11 @@ const CONTRACTS_TEMPLATE = [
         reqCheck: (infra, contract) => {
             const targetInfra = infra || state.infrastructure;
             const hasGlobalLb = targetInfra.components.some(c => c.type === 'lb_global');
+            const hasCompute = targetInfra.components.some(c => c.tier === 'compute');
+            const hasDb = targetInfra.components.some(c => c.tier === 'db');
             const hasTrace = targetInfra.components.some(c => c.type === 'monitoring_trace');
             const lat = contract && contract.signed ? contract.latency : state.latency;
-            return hasGlobalLb && hasTrace && lat <= 35 && lat > 0;
+            return hasGlobalLb && hasCompute && hasDb && hasTrace && lat <= 35 && lat > 0;
         }
     },
     {
@@ -100,6 +132,14 @@ const CONTRACTS_TEMPLATE = [
                 const targetInfra = infra || state.infrastructure;
                 return targetInfra.components.some(c => c.tier === 'queue');
             }},
+            { text: 'Au moins 1 Load Balancer (Réseau)', check: (infra) => {
+                const targetInfra = infra || state.infrastructure;
+                return targetInfra.components.some(c => c.tier === 'lb');
+            }},
+            { text: 'Au moins 1 Database (Données)', check: (infra) => {
+                const targetInfra = infra || state.infrastructure;
+                return targetInfra.components.some(c => c.tier === 'db');
+            }},
             { text: 'Capacité Compute >= 200 QPS', check: (infra) => {
                 const targetInfra = infra || state.infrastructure;
                 return targetInfra.components
@@ -111,10 +151,12 @@ const CONTRACTS_TEMPLATE = [
             const targetInfra = infra || state.infrastructure;
             const hasVertex = targetInfra.components.some(c => c.type === 'ai_vertex');
             const hasBroker = targetInfra.components.some(c => c.tier === 'queue');
+            const hasLb = targetInfra.components.some(c => c.tier === 'lb');
+            const hasDb = targetInfra.components.some(c => c.tier === 'db');
             const compCap = targetInfra.components
                 .filter(c => c.tier === 'compute')
                 .reduce((acc, c) => acc + (c.activeMaxQps || c.maxQps), 0);
-            return hasVertex && hasBroker && compCap >= 200;
+            return hasVertex && hasBroker && hasLb && hasDb && compCap >= 200;
         }
     },
     {
@@ -128,6 +170,10 @@ const CONTRACTS_TEMPLATE = [
         minTrustToSign: 80,
         minSlaToSign: 94.00,
         reqDetails: [
+            { text: 'Au moins 1 Load Balancer (Réseau)', check: (infra) => {
+                const targetInfra = infra || state.infrastructure;
+                return targetInfra.components.some(c => c.tier === 'lb');
+            }},
             { text: 'Coffre HashiCorp Vault', check: (infra) => {
                 const targetInfra = infra || state.infrastructure;
                 return targetInfra.components.some(c => c.type === 'security_vault');
@@ -149,13 +195,14 @@ const CONTRACTS_TEMPLATE = [
         ],
         reqCheck: (infra) => {
             const targetInfra = infra || state.infrastructure;
+            const hasLb = targetInfra.components.some(c => c.tier === 'lb');
             const hasVault = targetInfra.components.some(c => c.type === 'security_vault');
             const hasSpanner = targetInfra.components.some(c => c.type === 'db_spanner');
             const hasApm = targetInfra.components.some(c => c.type === 'monitoring_apm');
             const compCap = targetInfra.components
                 .filter(c => c.tier === 'compute')
                 .reduce((acc, c) => acc + (c.activeMaxQps || c.maxQps), 0);
-            return hasVault && hasSpanner && hasApm && compCap >= 300;
+            return hasLb && hasVault && hasSpanner && hasApm && compCap >= 300;
         }
     },
     {
@@ -172,6 +219,14 @@ const CONTRACTS_TEMPLATE = [
             { text: 'BigQuery Analytics', check: (infra) => {
                 const targetInfra = infra || state.infrastructure;
                 return targetInfra.components.some(c => c.type === 'ai_bigquery');
+            }},
+            { text: 'Au moins 1 Load Balancer (Réseau)', check: (infra) => {
+                const targetInfra = infra || state.infrastructure;
+                return targetInfra.components.some(c => c.tier === 'lb');
+            }},
+            { text: 'Au moins 1 Database (Données)', check: (infra) => {
+                const targetInfra = infra || state.infrastructure;
+                return targetInfra.components.some(c => c.tier === 'db');
             }},
             { text: 'Pipeline DevOps GitOps', check: (infra) => {
                 const targetInfra = infra || state.infrastructure;
@@ -191,12 +246,14 @@ const CONTRACTS_TEMPLATE = [
         reqCheck: (infra) => {
             const targetInfra = infra || state.infrastructure;
             const hasBq = targetInfra.components.some(c => c.type === 'ai_bigquery');
+            const hasLb = targetInfra.components.some(c => c.tier === 'lb');
+            const hasDb = targetInfra.components.some(c => c.tier === 'db');
             const hasGitops = targetInfra.components.some(c => c.type === 'cicd_gitops');
             const hasCdn = targetInfra.cdnActive || targetInfra.components.some(c => c.type === 'cdn');
             const compCap = targetInfra.components
                 .filter(c => c.tier === 'compute')
                 .reduce((acc, c) => acc + (c.activeMaxQps || c.maxQps), 0);
-            return hasBq && hasGitops && hasCdn && compCap >= 400;
+            return hasBq && hasLb && hasDb && hasGitops && hasCdn && compCap >= 400;
         }
     },
     {
@@ -210,6 +267,10 @@ const CONTRACTS_TEMPLATE = [
         minTrustToSign: 90,
         minSlaToSign: 98.00,
         reqDetails: [
+            { text: 'Au moins 1 Load Balancer (Réseau)', check: (infra) => {
+                const targetInfra = infra || state.infrastructure;
+                return targetInfra.components.some(c => c.tier === 'lb');
+            }},
             { text: 'Chaos Mesh Daemon', check: (infra) => {
                 const targetInfra = infra || state.infrastructure;
                 return targetInfra.components.some(c => c.type === 'chaos_mesh');
@@ -239,6 +300,7 @@ const CONTRACTS_TEMPLATE = [
         ],
         reqCheck: (infra) => {
             const targetInfra = infra || state.infrastructure;
+            const hasLb = targetInfra.components.some(c => c.tier === 'lb');
             const compCap = targetInfra.components
                 .filter(c => c.tier === 'compute')
                 .reduce((acc, c) => acc + (c.activeMaxQps || c.maxQps), 0);
@@ -247,7 +309,7 @@ const CONTRACTS_TEMPLATE = [
             const hasGitops = targetInfra.components.some(c => c.type === 'cicd_gitops');
             const hasVault = targetInfra.components.some(c => c.type === 'security_vault');
             const hasChaos = targetInfra.components.some(c => c.type === 'chaos_mesh');
-            return compCap >= 500 && hasSpanner && hasCdn && hasGitops && hasVault && hasChaos;
+            return hasLb && compCap >= 500 && hasSpanner && hasCdn && hasGitops && hasVault && hasChaos;
         }
     }
 ];
@@ -1057,6 +1119,9 @@ function updateGameNotificationsDOM() {
                 } else if (e.type === 'ZONE_OUTAGE') {
                     desc = `Panne de zone physique sur ${c.name}. VM et DB Postgres uniques bridées à 20%.`;
                     icon = '💥';
+                } else if (e.type === 'ARCHITECTURE_INVALID') {
+                    desc = `Architecture non conforme sur ${c.name}. Chaque projet requiert au minimum un Load Balancer (Réseau), un Compute (Calcul) et une DB (Données).`;
+                    icon = '📐';
                 } else {
                     desc = `Incident système actif sur l'infrastructure de ${c.name}.`;
                     icon = '🔥';
@@ -2095,6 +2160,9 @@ function updateActiveIncidentsPanel() {
         } else if (e.type === 'ZONE_OUTAGE') {
             desc = `Panne de zone physique sur ${c.name}. VM et DB Postgres uniques bridées à 20% !`;
             icon = '💥';
+        } else if (e.type === 'ARCHITECTURE_INVALID') {
+            desc = e.desc || `Architecture non conforme sur ${c.name}. Déployez au moins 1 Load Balancer, 1 Compute et 1 DB.`;
+            icon = '📐';
         } else {
             desc = `Perturbation sur l'infrastructure de ${c.name}.`;
             icon = '🔥';
@@ -2805,6 +2873,17 @@ function triggerWaf() {
         state.actions.waf.active = true;
         state.actions.waf.activeTimer = state.actions.waf.duration;
         logMessage("WAF Activé", "Filtrage DDoS en cours. Overhead de latence réseau mineur.", "warning");
+        
+        // Raccourcir la durée des incidents DDOS et DNS_ATTACK à un max de 2 ticks pour le contrat actif
+        const activeContract = state.contracts.find(c => c.id === state.activeContractId);
+        if (activeContract && activeContract.activeEvents) {
+            activeContract.activeEvents.forEach(e => {
+                if (e.type === 'DDOS' || e.type === 'DNS_ATTACK') {
+                    e.durationRemaining = Math.min(e.durationRemaining, 2);
+                }
+            });
+        }
+        
         if (state.stats) state.stats.actionsCount++;
         updateUIElements();
     }
@@ -2815,19 +2894,26 @@ function triggerDbOptimization() {
         state.actions.dbOpt.cooldown = state.actions.dbOpt.maxCooldown;
         
         const activeContract = state.contracts.find(c => c.id === state.activeContractId);
-        const dbLockEvent = activeContract ? activeContract.activeEvents.find(e => e.type === 'DB_LOCK') : null;
-        if (dbLockEvent) {
-            dbLockEvent.durationRemaining = 2; // Clean deadlocks
-            logMessage("Maintenance DB active", "Purge des deadlocks SQL et reconstruction des index réussie.", "info");
+        let resolvedAny = false;
+        if (activeContract && activeContract.activeEvents) {
+            activeContract.activeEvents.forEach(e => {
+                if (e.type === 'DB_LOCK' || e.type === 'DISK_FULL') {
+                    e.durationRemaining = Math.min(e.durationRemaining, 2);
+                    resolvedAny = true;
+                }
+            });
+        }
+        
+        if (resolvedAny) {
+            logMessage("Maintenance DB active", "Purge des deadlocks SQL et libération de l'espace disque en cours.", "info");
         } else {
             logMessage("Maintenance DB active", "Reconstruction des index effectuée.", "info");
         }
+        
         if (state.stats) state.stats.actionsCount++;
         updateUIElements();
     }
-}
-
-// --- CHAOS ENGINE & SIMULATION LOGIC ---
+}// --- CHAOS ENGINE & SIMULATION LOGIC ---
 function simulationTick() {
     if (!state.gameStarted || state.gameOver || state.victory) return;
     
@@ -2987,6 +3073,53 @@ function simulationTick() {
         const hasVertex = state.infrastructure.components.some(comp => comp.type === 'ai_vertex');
         const hasSpanner = state.infrastructure.components.some(comp => comp.type === 'db_spanner');
 
+        // Validation de la conformité d'architecture en direct (Chaque projet exige au moins LB, Compute et DB)
+        const hasLb = state.infrastructure.components.some(comp => comp.tier === 'lb');
+        const hasCompute = state.infrastructure.components.some(comp => comp.tier === 'compute');
+        const hasDb = state.infrastructure.components.some(comp => comp.tier === 'db');
+        const hasBasicArch = hasLb && hasCompute && hasDb;
+        const isConform = hasBasicArch && (c.reqCheck ? c.reqCheck(state.infrastructure, c) : true);
+        if (!isConform) {
+            const hasArchIncident = c.activeEvents.some(e => e.type === 'ARCHITECTURE_INVALID');
+            if (!hasArchIncident) {
+                c.activeEvents.push({
+                    type: 'ARCHITECTURE_INVALID',
+                    name: 'Architecture Invalide (Non conforme)',
+                    desc: 'Infrastructure incomplète. Chaque projet requiert au minimum un Load Balancer (Réseau), un Compute (Calcul) et une DB (Données).',
+                    durationRemaining: 9999, // Persistant
+                    level: 'danger',
+                    graceTimer: 0
+                });
+                logMessage(
+                    "CONFORMITÉ ARCHITECTURE ÉCHOUÉE", 
+                    `[${c.name}] L'architecture ne respecte pas les exigences minimales (LB, Compute, DB).`, 
+                    "danger"
+                );
+                addTemporaryNotification(
+                    "📐 Architecture Invalide", 
+                    `Le projet ${c.name} requiert au minimum : Load Balancer, Compute et DB !`, 
+                    "danger", 
+                    6000
+                );
+            }
+        } else {
+            const archIndex = c.activeEvents.findIndex(e => e.type === 'ARCHITECTURE_INVALID');
+            if (archIndex !== -1) {
+                c.activeEvents.splice(archIndex, 1);
+                logMessage(
+                    "CONFORMITÉ ARCHITECTURE RÉTABLIE", 
+                    `[${c.name}] L'architecture est désormais conforme. Reprise du trafic.`, 
+                    "green"
+                );
+                addTemporaryNotification(
+                    "📐 Architecture Conforme", 
+                    `L'architecture de ${c.name} est conforme. Démarrage des services.`, 
+                    "green", 
+                    6000
+                );
+            }
+        }
+
         // Réinitialiser la capacité des VM ordinaires qui peuvent être affectées par Zone Outage
         state.infrastructure.components.forEach(comp => {
             if (comp.type === 'compute_vm' || comp.id.includes('initial_1')) {
@@ -3077,7 +3210,11 @@ function simulationTick() {
         let droppedRequests = 0;
         let activeTraffic = state.qps;
         
-        if (state.qps > lbCapacity && lbCapacity > 0) {
+        const hasArchInvalid = c.activeEvents.some(e => e.type === 'ARCHITECTURE_INVALID');
+        if (hasArchInvalid) {
+            droppedRequests = state.qps;
+            activeTraffic = 0;
+        } else if (state.qps > lbCapacity && lbCapacity > 0) {
             droppedRequests += (state.qps - lbCapacity);
             activeTraffic = lbCapacity;
         } else if (lbCapacity === 0) {
@@ -3357,7 +3494,11 @@ function simulationTick() {
         if (hasTrace) currentLatency *= 0.9;
         if (hasVertex) currentLatency += 25;
         
-        state.latency = state.qps === 0 ? 0 : Math.max(0, currentLatency);
+        if (hasArchInvalid) {
+            state.latency = 999;
+        } else {
+            state.latency = state.qps === 0 ? 0 : Math.max(0, currentLatency);
+        }
         
         // I. TIMEOUT ET MISE A JOUR DU SLA
         let latencyDropped = 0;
@@ -4012,6 +4153,16 @@ function initCanvas() {
             } else {
                 setGameSpeed(state.previousActiveSpeed || 1);
             }
+            return;
+        }
+        
+        if (e.key === 'w' || e.key === 'W') {
+            triggerWaf();
+            return;
+        }
+
+        if (e.key === 'd' || e.key === 'D') {
+            triggerDbOptimization();
             return;
         }
         
