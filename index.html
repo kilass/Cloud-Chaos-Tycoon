@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Chaos Tycoon v7.5 - DevOps Simulation</title>
+    <meta name="description" content="Gérez votre infrastructure cloud globale, réagissez aux incidents en temps réel et maintenez votre SLA dans ce jeu incrémental immersif pour DevOps et Cloud Architects.">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Modal d'Onboarding -->
+    <div id="onboarding-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 680px;">
+            <h2 class="modal-title" style="text-align: center; border-bottom: 2px solid rgba(0, 240, 255, 0.2); padding-bottom: 0.75rem;">
+                📟 CLOUD CHAOS TYCOON
+            </h2>
+            <div class="modal-body-text" style="text-align: center; margin-bottom: 0.5rem;">
+                <p style="font-size: 0.95rem; color: #f8fafc; font-weight: 600;">Bienvenue à bord, <strong>Architecte Cloud Principal</strong>.</p>
+                <p style="font-size: 0.78rem; color: var(--color-muted); line-height: 1.4; max-width: 580px; margin: 0 auto;">
+                    Votre mission est de déployer et d'architecturer une infrastructure cloud résiliente aux pannes. Signez des contrats, optimisez le routage et le calcul, et combattez le chaos réseau en temps réel pour préserver vos SLA.
+                </p>
+            </div>
+            
+            <h3 class="modal-sub" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; margin-top: 0.25rem; border-bottom: 1px dashed rgba(255,255,255,0.08); padding-bottom: 0.25rem; text-align: center;">
+                🎮 Sélectionnez votre mode d'entrée
+            </h3>
+            
+            <div class="mode-selection-container">
+                <div class="mode-card tuto" onclick="selectStartMode('tutorial')">
+                    <span class="mode-card-badge">CONSEILLÉ</span>
+                    <div class="mode-card-title">🎓 Académie DevOps</div>
+                    <div class="mode-card-desc">
+                        Un parcours guidé interactif de 6 étapes pour maîtriser l'architecture GCP, le routage LB, le scaling et la résolution de crise CPU en direct.
+                    </div>
+                </div>
+                <div class="mode-card free" onclick="selectStartMode('free')">
+                    <div class="mode-card-title">🚀 Simulation Libre</div>
+                    <div class="mode-card-desc">
+                        Prenez directement les commandes. Démarrez de zéro, gérez votre budget de départ, faites des choix d'architecture astucieux et visez le contrat SaaS IA ultime.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Fin de Partie (Victoire / Défaite) avec Dashboard et Comparatif des Runs -->
+    <div id="game-end-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content" style="max-width: 750px; width: 95%;">
+            <h2 class="modal-title" id="game-end-title">Mission Terminée</h2>
+            <div class="modal-body-text" id="game-end-desc">
+                Description de la fin de partie.
+            </div>
+            
+            <!-- Dashboard des Statistiques de Fin de Run -->
+            <div class="run-stats-dashboard" style="margin-top: 0.5rem; width: 100%;">
+                <h3 class="modal-sub" style="border-bottom: 1px dashed rgba(0, 240, 255, 0.2); padding-bottom: 0.25rem; font-size: 0.9rem;">📊 ANALYSE DE PERFORMANCE DU RUN</h3>
+                <div class="run-metrics-grid">
+                    <div class="rts-metric-box">
+                        <span class="rts-metric-label">Temps Survécu</span>
+                        <span class="rts-metric-val" id="stat-time">0s</span>
+                    </div>
+                    <div class="rts-metric-box">
+                        <span class="rts-metric-label">Budget Crête</span>
+                        <span class="rts-metric-val" id="stat-max-budget">0 $</span>
+                    </div>
+                    <div class="rts-metric-box">
+                        <span class="rts-metric-label">Trafic de Pointe</span>
+                        <span class="rts-metric-val" id="stat-max-qps">0 QPS</span>
+                    </div>
+                    <div class="rts-metric-box">
+                        <span class="rts-metric-label">SLA Moyen</span>
+                        <span class="rts-metric-val" id="stat-avg-sla">100.00%</span>
+                    </div>
+                    <div class="rts-metric-box">
+                        <span class="rts-metric-label">Incidents Subis</span>
+                        <span class="rts-metric-val" id="stat-incidents">0</span>
+                    </div>
+                    <div class="rts-metric-box">
+                        <span class="rts-metric-label">Actions DevOps</span>
+                        <span class="rts-metric-val" id="stat-actions">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historique des Runs et Comparatif -->
+            <div class="runs-history-container" style="margin-top: 0.5rem; width: 100%;">
+                <h3 class="modal-sub" style="border-bottom: 1px dashed rgba(255, 0, 127, 0.2); padding-bottom: 0.25rem; font-size: 0.9rem;">⏳ HISTORIQUE DE COMPARAISON DES RUNS</h3>
+                <div class="table-wrapper" style="overflow-x: auto; max-height: 150px; border: 1px solid var(--border-color); border-radius: 4px; background: rgba(5,8,17,0.6);">
+                    <table class="runs-table" style="width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.74rem; text-align: left;">
+                        <thead style="background: rgba(10, 15, 29, 0.95); position: sticky; top: 0; color: var(--cyan); border-bottom: 1px solid var(--border-color);">
+                            <tr>
+                                <th style="padding: 0.4rem 0.6rem;">Date/Heure</th>
+                                <th style="padding: 0.4rem 0.6rem;">Résultat</th>
+                                <th style="padding: 0.4rem 0.6rem;">Durée</th>
+                                <th style="padding: 0.4rem 0.6rem;">Budget Max</th>
+                                <th style="padding: 0.4rem 0.6rem;">QPS Max</th>
+                                <th style="padding: 0.4rem 0.6rem;">SLA Moyen</th>
+                                <th style="padding: 0.4rem 0.6rem; text-align: right;">Record</th>
+                            </tr>
+                        </thead>
+                        <tbody id="runs-history-body">
+                            <!-- Rempli dynamiquement en JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <button class="btn" id="btn-restart-game" style="font-size:1rem; padding: 0.75rem 1.5rem; margin-top:0.75rem; width: 220px; align-self: center;">Recommencer le Run</button>
+        </div>
+    </div>
+
+    <!-- Top Navigation and Global Stats Bar -->
+    <header>
+        <div class="logo">
+            <div class="logo-icon"></div>
+            <h1 class="logo-text">CLOUD CHAOS TYCOON <span class="logo-version">v7.5</span></h1>
+        </div>
+        
+        <div class="metrics-bar">
+            <div class="metric-card" id="metric-budget-card" style="position: relative;">
+                <span class="metric-label">Budget Cloud</span>
+                <div style="display: flex; align-items: baseline; gap: 0.4rem;">
+                    <span class="metric-value" id="budget-value">1 000 $</span>
+                    <span class="budget-trend-indicator" id="budget-trend">▲ +0 $/s</span>
+                </div>
+                <div class="metric-tooltip" id="tooltip-budget"></div>
+            </div>
+            <div class="metric-card" id="metric-sla-card" style="position: relative;">
+                <span class="metric-label">SLA (24h)</span>
+                <span class="metric-value good" id="sla-value">100.00%</span>
+                <div class="metric-tooltip" id="tooltip-sla"></div>
+            </div>
+            <div class="metric-card" id="metric-trust-card" style="position: relative;">
+                <span class="metric-label">Confiance Client</span>
+                <span class="metric-value good" id="trust-value">100%</span>
+                <div class="metric-tooltip" id="tooltip-trust">Confiance globale basée sur la sécurité et la stabilité. Une baisse réduit les revenus. Si elle tombe à 0% : faillite.</div>
+            </div>
+            <div class="metric-card" id="metric-qps-card" style="position: relative;">
+                <span class="metric-label">Débit Réseau</span>
+                <span class="metric-value" id="qps-value">0 QPS</span>
+                <div class="metric-tooltip" id="tooltip-qps"></div>
+            </div>
+            <div class="metric-card" id="metric-latency-card" style="position: relative;">
+                <span class="metric-label">Latence Moyenne</span>
+                <span class="metric-value good" id="latency-value">45 ms</span>
+                <div class="metric-tooltip" id="tooltip-latency"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Grid -->
+    <main class="main-container">
+        
+        <!-- LEFT PANEL: Contracts & Diagnostic NOC -->
+        <section class="panel" aria-label="Gestion des Contrats de Services" id="contracts-panel" style="overflow-y: hidden;">
+            <div id="left-panel-container" style="display: flex; flex-direction: column; height: 100%; width: 100%;">
+                <!-- Section haute : contrats -->
+                <div class="contracts-section" style="height: 50%; max-height: 50%; display: flex; flex-direction: column; min-height: 0; overflow: hidden; border-bottom: 1px solid var(--border-color); box-sizing: border-box;">
+                    <div class="panel-header" style="border-bottom: 1px solid var(--border-color);">
+                        <span class="panel-title">Contrats de Services</span>
+                        <span class="status-badge nominal" id="active-contracts-count">0 Client</span>
+                    </div>
+                    <div class="contracts-container" id="contracts-list" style="flex: 1; overflow-y: auto; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                        <!-- Dynamic contract cards will be loaded here -->
+                    </div>
+                </div>
+                <!-- Section basse : diagnostics et logs NOC -->
+                <div class="diagnostic-section" style="height: 50%; max-height: 50%; display: flex; flex-direction: column; min-height: 0; overflow: hidden; background: rgba(5, 8, 17, 0.45); box-sizing: border-box;">
+                    <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding: 0.5rem 1rem;">
+                        <span class="panel-title" style="font-size: 0.72rem; color: var(--magenta);">📡 DIAGNOSTIC NOC & LOGS SYSTEME</span>
+                    </div>
+                    <div class="incidents-log" id="log-container" style="flex: 1; overflow-y: auto; padding: 0.5rem; font-family: var(--font-sans); font-size: 0.72rem; display: flex; flex-direction: column; gap: 0.35rem;">
+                        <div class="incident-item info">
+                            <div class="incident-header">
+                                <span class="incident-title">Système Démarré</span>
+                                <span class="incident-time">INIT</span>
+                            </div>
+                            <p class="incident-desc">Infrastructure déployée en us-east-1. Trafic utilisateur en attente de connexions.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CENTER AREA: Live Topology / Canvas Visualizer & Cockpit RTS -->
+        <section class="center-area" aria-label="Visualisation de la Topologie Réseau" style="display: flex; flex-direction: column;">
+            <!-- Bandeau de projets GCP (Onglets) -->
+            <div class="project-tabs" id="project-tabs"></div>
+            
+            <!-- Bandeau de tutoriel didactique -->
+            <div id="tutorial-banner" class="tutorial-banner" style="display: none;">
+                <div id="tutorial-text" class="tuto-text">Initialisation du tutoriel...</div>
+                <button id="tutorial-btn" class="tuto-action-btn">Compris</button>
+            </div>
+            
+            <!-- Overlay floating card for audit details (toujours visible) -->
+            <div class="overlay-info" style="display: block !important;">
+                <div class="overlay-title" id="overlay-node-title">Topologie Réseau Active</div>
+                <div class="overlay-text" id="overlay-node-desc">Surveillez les requêtes (particules de couleur) transitant entre l'Internet public et vos clusters applicatifs. Survoler un nœud ou un lien réseau pour afficher son audit détaillé.</div>
+            </div>
+            
+            <canvas id="network-map"></canvas>
+            
+            <!-- Indication de pause au centre bas (Ultra-visible et transparente) -->
+            <div id="pause-banner" class="pause-indicator">⏸ SIMULATION EN PAUSE - APPUYEZ SUR ESPACE POUR REPRENDRE</div>
+            
+            <!-- Map controls -->
+            <div class="view-controls" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button class="view-btn active" id="view-btn-packets">Afficher Paquets</button>
+                <button class="view-btn" id="view-btn-heatmap">Vue Thermique</button>
+                <span style="color: var(--color-muted); font-size: 0.7rem; align-self: center; margin: 0 0.5rem;">| FILTRES :</span>
+                <button class="view-btn active" id="toggle-perf" title="Afficher les étiquettes de performances (QPS, CPU...)">⚡ Perf</button>
+                <button class="view-btn active" id="toggle-load" title="Afficher les pourcentages de charge sous les nœuds">📊 Charge</button>
+                <button class="view-btn active" id="toggle-tooltips" title="Afficher les infobulles au survol">💬 Info</button>
+            </div>
+
+            <!-- RTS ACTION BAR (Cockpit bas de l'écran façon RTS) -->
+            <div class="rts-action-bar" style="grid-template-columns: 1.2fr 1.6fr 0.8fr;">
+                <!-- Zone Incidents Actifs -->
+                <div class="rts-section rts-incidents-section">
+                    <div class="rts-section-title">🚨 ALERTES & INCIDENTS ACTIFS</div>
+                    <div class="active-incidents-panel" id="active-incidents-container">
+                        <div class="nominal-incident-card">
+                            ✓ NOMINAL : INFRASTRUCTURE STABLE
+                        </div>
+                    </div>
+                </div>
+                <div class="rts-section rts-commands-section">
+                    <div class="rts-section-title">🛡️ COMMANDES D'URGENCE DE LA COMPAGNIE</div>
+                    <div class="rts-buttons-grid">
+                        <div class="action-card-rts" id="action-waf">
+                            <button class="btn btn-danger rts-btn" id="btn-action-waf">
+                                <span class="rts-btn-key">[W]</span>
+                                <span class="rts-btn-text">ACTIVER LE WAF<br><small>Cloud Armor DDoS Filter</small></span>
+                            </button>
+                            <div class="rts-cooldown-overlay" id="cooldown-overlay-waf"></div>
+                            <div class="rts-cooldown-text" id="cooldown-text-waf">Ready</div>
+                            
+                            <!-- Tooltip d'action -->
+                            <div class="action-tooltip">
+                                <div class="tooltip-header">Mitigation d'urgence WAF</div>
+                                <div class="tooltip-desc">Activer le pare-feu applicatif Cloud Armor temporairement.</div>
+                                <div class="tooltip-section">
+                                    <div class="tooltip-row green"><span>• Effet :</span><span>Filtre 85% de l'attaque DDoS</span></div>
+                                    <div class="tooltip-row red"><span>• Coût :</span><span>Latence réseau +12 ms</span></div>
+                                    <div class="tooltip-row yellow"><span>• Durée :</span><span>12 secondes actives</span></div>
+                                    <div class="tooltip-row muted"><span>• Recharge :</span><span>30 secondes</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="action-card-rts" id="action-db-opt">
+                            <button class="btn rts-btn" id="btn-action-db-opt">
+                                <span class="rts-btn-key">[D]</span>
+                                <span class="rts-btn-text">VACUUM & INDEX SQL<br><small>DB Maintenance Action</small></span>
+                            </button>
+                            <div class="rts-cooldown-overlay" id="cooldown-overlay-db-opt"></div>
+                            <div class="rts-cooldown-text" id="cooldown-text-db-opt">Ready</div>
+                            
+                            <!-- Tooltip d'action -->
+                            <div class="action-tooltip">
+                                <div class="tooltip-header">Reconstruction & Vacuum SQL</div>
+                                <div class="tooltip-desc">Lancer une maintenance d'urgence de la base de données SQL.</div>
+                                <div class="tooltip-section">
+                                    <div class="tooltip-row green"><span>• Effet :</span><span>Libère les verrous (Incident DB_LOCK résolu)</span></div>
+                                    <div class="tooltip-row green"><span>• Performance :</span><span>Reconstruit les index SQL</span></div>
+                                    <div class="tooltip-row muted"><span>• Recharge :</span><span>25 secondes</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Zone Droite: Contrôle Temporel de la simulation -->
+                <div class="rts-section rts-system-section">
+                    <div class="rts-section-title">⏱️ CONTROLE TEMPOREL NOC</div>
+                    <div class="rts-system-status">
+                        <span class="incident-time" id="system-time" style="font-size: 1.1rem; display: block; margin-bottom: 0.4rem; text-align: center; color: var(--cyan); font-weight: bold;">19:42:00</span>
+                        <div class="speed-controls" id="speed-controls-container">
+                            <button class="speed-btn active" id="speed-btn-pause">⏸ Pause</button>
+                            <button class="speed-btn" id="speed-btn-x1">▶ x1</button>
+                            <button class="speed-btn" id="speed-btn-x2">⏩ x2</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- RIGHT PANEL: Infrastructure Catalog (Précédemment à gauche, maintenant à droite) -->
+        <section class="panel right" aria-label="Gestion de l'Infrastructure" id="catalog-panel" style="overflow-y: hidden;">
+            <div id="right-panel-container" style="display: flex; flex-direction: column; height: 100%; width: 100%;">
+                
+                <!-- Section haute : Catalogue de composants (50%) -->
+                <div class="catalog-section" style="height: 50%; max-height: 50%; display: flex; flex-direction: column; min-height: 0; overflow: hidden; border-bottom: 1px solid var(--border-color); box-sizing: border-box;">
+                    <div class="panel-header" style="border-bottom: 1px solid var(--border-color);">
+                        <span class="panel-title">Catalogue Cloud</span>
+                        <span class="status-badge nominal" id="infra-status">Nominal</span>
+                    </div>
+                    <div class="catalog-container" style="flex: 1; overflow-y: auto; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <p class="upgrade-desc" style="margin-bottom: 0.15rem; font-size: 0.73rem; line-height: 1.3;">Glissez et déposez des composants depuis le catalogue ci-dessous directement sur les zones correspondantes du schéma réseau.</p>
+                        
+                        <!-- Barre d'onglets de filtrage -->
+                        <div class="catalog-tabs">
+                            <button class="catalog-tab-btn active" data-tab="all">Tout</button>
+                            <button class="catalog-tab-btn" data-tab="network" style="--tab-color: var(--cyan);">🌐 Réseau</button>
+                            <button class="catalog-tab-btn" data-tab="compute" style="--tab-color: var(--green);">⚙️ Calcul</button>
+                            <button class="catalog-tab-btn" data-tab="data" style="--tab-color: var(--yellow);">🛢️ Données</button>
+                            <button class="catalog-tab-btn" data-tab="ops" style="--tab-color: var(--magenta);">🛡️ Ops/Sec</button>
+                            <button class="catalog-tab-btn" data-tab="ai_chaos" style="--tab-color: #1e90ff;">🧠 IA/Chaos</button>
+                        </div>
+                        
+                        <div class="rts-build-grid" id="catalog-grid">
+                            <!-- Dynamic SVG component tiles loaded from JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section basse : Objectifs, Alertes, Inspecteur & Config (50%) -->
+                <div class="info-section" style="height: 50%; max-height: 50%; display: flex; flex-direction: column; min-height: 0; overflow: hidden; background: rgba(5, 8, 17, 0.45); box-sizing: border-box;">
+                    <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding: 0.5rem 1rem;">
+                        <span class="panel-title" style="font-size: 0.72rem; color: var(--magenta);">📟 OBJECTIFS, ALERTES & DIAGNOSTICS</span>
+                    </div>
+                    <div class="info-container" style="flex: 1; overflow-y: auto; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                        
+                        <!-- Objectifs de mission -->
+                        <div class="objectives-panel" id="objectives-panel">
+                            <!-- Rempli dynamiquement en JS -->
+                        </div>
+
+                        <!-- Notifications d'incidents / événements temporaires -->
+                        <div id="game-notifications-container" class="game-notifications-container"></div>
+
+                        <!-- Fixed Cyberpunk Inspector Panel -->
+                        <div class="catalog-inspector-panel" id="catalog-inspector">
+                            <div class="inspector-logo-container" id="inspector-logo-container"></div>
+                            <div class="inspector-header">
+                                <span class="inspector-title" id="inspector-title">Console d'inspection</span>
+                                <span class="inspector-provider" id="inspector-provider">SYS</span>
+                            </div>
+                            <div class="inspector-desc" id="inspector-desc">
+                                Survolez un composant du catalogue à droite pour inspecter ses caractéristiques et concepts GCP.
+                            </div>
+                            
+                            <!-- Informations riches didactiques ajoutées -->
+                            <div id="inspector-rich-details" style="display: none; flex-direction: column; gap: 0.35rem; border-top: 1px dashed rgba(0, 240, 255, 0.15); border-bottom: 1px dashed rgba(0, 240, 255, 0.15); padding: 0.4rem 0; margin: 0.4rem 0; font-size: 0.7rem;">
+                                <div>⚡ <strong>Fonction :</strong> <span id="ins-function">N/A</span></div>
+                                <div>🎯 <strong>Besoin :</strong> <span id="ins-need">N/A</span></div>
+                                <div style="display: flex; gap: 0.3rem; flex-wrap: wrap; margin-top: 0.15rem;" id="ins-tags-container">
+                                    <!-- Tags dynamiques injectés en JS -->
+                                </div>
+                            </div>
+                            
+                            <div class="inspector-stats-grid" id="inspector-stats" style="display: none;">
+                                <div class="inspector-stat-item">
+                                    <span class="inspector-stat-label">Achat :</span>
+                                    <span class="inspector-stat-val upfront" id="ins-cost">0 $</span>
+                                </div>
+                                <div class="inspector-stat-item">
+                                    <span class="inspector-stat-label">Maint. :</span>
+                                    <span class="inspector-stat-val maint" id="ins-maint">0 $/s</span>
+                                </div>
+                                <div class="inspector-stat-item">
+                                    <span class="inspector-stat-label">Capacité :</span>
+                                    <span class="inspector-stat-val cap" id="ins-cap">N/A</span>
+                                </div>
+                                <div class="inspector-stat-item">
+                                    <span class="inspector-stat-label">Latence :</span>
+                                    <span class="inspector-stat-val latency" id="ins-latency">N/A</span>
+                                </div>
+                            </div>
+                            <div class="inspector-concept-badge" id="inspector-concept" style="display: none;">
+                                Conseil : ...
+                            </div>
+                        </div>
+
+                        <!-- Component Configurator Panel -->
+                        <div class="active-config-panel" id="config-panel" style="display:none; border-top: 1px solid var(--border-color); padding-top: 0.5rem; margin-top: 0.25rem;">
+                            <div class="panel-title" style="font-size: 0.75rem; color: var(--magenta); margin-bottom: 0.5rem;">Propriétés du Composant</div>
+                            <div class="config-card">
+                                <div class="config-logo-container" id="config-comp-logo"></div>
+                                <div class="config-name" id="config-comp-name">Aucun composant sélectionné</div>
+                                <div class="config-stats" id="config-comp-stats">Sélectionnez un nœud d'infrastructure pour modifier ses propriétés.</div>
+                                <div class="config-actions" id="config-comp-actions" style="margin-top: 0.5rem;">
+                                    <!-- Dynamic controls will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </section>
+        
+    </main>
+
+    <!-- Core Script -->
+    <script src="app.js"></script>
+</body>
+</html>
